@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0D1B2A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="kJ ↔ kcal" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <title>Energy Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #0D1B2A;
+      --amber:  #F5A623;
+      --amber2: #E8941A;
+      --white:  #F0EDE8;
+      --grey:   #6B7280;
+      --card:   #162234;
+      --border: #243447;
+    }
+    html, body {
+      height: 100%;
+      background: var(--navy);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 24px 20px;
+    }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 6px;
+    }
+    header p { font-size: 13px; color: var(--grey); letter-spacing: 0.02em; }
+
+    .stack { width: 100%; max-width: 360px; display: flex; flex-direction: column; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px 22px 20px;
+    }
+    .card:first-child { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+    .card:last-child  { border-top-left-radius: 6px; border-top-right-radius: 6px; margin-top: 3px; }
+
+    .card-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 10px; user-select: none;
+    }
+    .card.active .card-label { color: var(--amber); }
+
+    .card-row { display: flex; align-items: baseline; gap: 10px; }
+
+    input[type="number"] {
+      background: transparent; border: none; outline: none;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px; font-weight: 700;
+      color: var(--white); width: 100%; min-width: 0;
+      letter-spacing: -0.02em;
+      -moz-appearance: textfield; appearance: textfield;
+      caret-color: var(--amber);
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input::placeholder { color: var(--border); }
+
+    .unit-tag {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 14px; font-weight: 600;
+      color: var(--grey); white-space: nowrap;
+      padding-bottom: 4px; user-select: none;
+    }
+    .result-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 48px; font-weight: 700;
+      color: var(--white); letter-spacing: -0.02em;
+      min-height: 58px; display: flex; align-items: center;
+    }
+    .result-value.empty { color: var(--border); }
+
+    .swap-wrap {
+      display: flex; justify-content: center; align-items: center;
+      height: 44px; position: relative; z-index: 10;
+    }
+    .swap-btn {
+      background: var(--amber); border: none; border-radius: 50%;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 0 0 5px var(--navy);
+    }
+    .swap-btn:active { background: var(--amber2); }
+    .swap-btn svg {
+      width: 18px; height: 18px;
+      stroke: var(--navy); fill: none;
+      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+      pointer-events: none;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .swap-btn.spinning svg { transform: rotate(180deg); }
+
+    .convert-btn {
+      width: 100%; max-width: 360px; margin-top: 24px;
+      padding: 18px; background: var(--amber); color: var(--navy);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: none; border-radius: 14px; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .convert-btn:active { background: var(--amber2); transform: scale(0.98); }
+
+    .factor { font-size: 11px; color: var(--grey); margin-top: 10px; letter-spacing: 0.03em; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .shake { animation: shake 0.35s ease; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeUp 0.2s ease forwards; }
+
+    /* iOS install banner */
+    #install-banner {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 16px 20px; text-align: center;
+      font-size: 13px; color: var(--grey);
+      z-index: 100;
+    }
+    #install-banner span { color: var(--white); }
+    #install-banner button {
+      display: block; margin: 10px auto 0;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--grey); border-radius: 8px;
+      padding: 6px 16px; font-size: 12px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Energy Converter</h1>
+    <p>kilojoules · calories</p>
+  </header>
+
+  <div class="stack">
+    <div class="card active" id="inputCard">
+      <div class="card-label" id="inputLabel">Kilojoules</div>
+      <div class="card-row">
+        <input type="number" id="inputField" inputmode="decimal" placeholder="0" autocomplete="off" autofocus />
+        <div class="unit-tag" id="inputUnit">kJ</div>
+      </div>
+    </div>
+
+    <div class="swap-wrap">
+      <button class="swap-btn" id="swapBtn" aria-label="Swap units">
+        <svg viewBox="0 0 24 24">
+          <polyline points="17 1 21 5 17 9"/>
+          <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+          <polyline points="7 23 3 19 7 15"/>
+          <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="card" id="outputCard">
+      <div class="card-label" id="outputLabel">Calories</div>
+      <div class="card-row">
+        <div class="result-value empty" id="result">—</div>
+        <div class="unit-tag" id="outputUnit">kcal</div>
+      </div>
+      <div class="factor" id="factorLabel">Enter a value above and tap Convert</div>
+    </div>
+  </div>
+
+  <button class="convert-btn" id="convertBtn">Convert</button>
+
+  <div id="install-banner">
+    <span>Add to Home Screen</span> for the full app experience<br>
+    Tap <span>Share →</span> then <span>"Add to Home Screen"</span>
+    <button id="banner-close">Got it</button>
+  </div>
+
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+
+    const KJ_PER_KCAL = 4.184;
+    let modeKjToKcal = true;
+
+    const inputField  = document.getElementById('inputField');
+    const inputLabel  = document.getElementById('inputLabel');
+    const inputUnit   = document.getElementById('inputUnit');
+    const outputLabel = document.getElementById('outputLabel');
+    const outputUnit  = document.getElementById('outputUnit');
+    const result      = document.getElementById('result');
+    const factorLabel = document.getElementById('factorLabel');
+    const swapBtn     = document.getElementById('swapBtn');
+    const convertBtn  = document.getElementById('convertBtn');
+
+    function updateLabels() {
+      if (modeKjToKcal) {
+        inputLabel.textContent  = 'Kilojoules';
+        inputUnit.textContent   = 'kJ';
+        outputLabel.textContent = 'Calories';
+        outputUnit.textContent  = 'kcal';
+      } else {
+        inputLabel.textContent  = 'Calories';
+        inputUnit.textContent   = 'kcal';
+        outputLabel.textContent = 'Kilojoules';
+        outputUnit.textContent  = 'kJ';
+      }
+    }
+
+    function clearResult() {
+      result.textContent = '—';
+      result.classList.add('empty');
+      factorLabel.textContent = 'Enter a value above and tap Convert';
+    }
+
+    function convert() {
+      const raw = parseFloat(inputField.value);
+      if (isNaN(raw) || inputField.value.trim() === '') {
+        document.getElementById('inputCard').classList.add('shake');
+        setTimeout(() => document.getElementById('inputCard').classList.remove('shake'), 400);
+        clearResult();
+        return;
+      }
+      let out, factor;
+      if (modeKjToKcal) {
+        out    = raw / KJ_PER_KCAL;
+        factor = `${raw.toLocaleString()} kJ ÷ 4.184`;
+      } else {
+        out    = raw * KJ_PER_KCAL;
+        factor = `${raw.toLocaleString()} kcal × 4.184`;
+      }
+      const formatted = out % 1 === 0
+        ? out.toLocaleString()
+        : out.toLocaleString(undefined, { maximumFractionDigits: 1 });
+
+      result.textContent = formatted;
+      result.classList.remove('empty');
+      result.classList.remove('fade-in');
+      void result.offsetWidth;
+      result.classList.add('fade-in');
+      factorLabel.textContent = factor;
+    }
+
+    swapBtn.addEventListener('click', () => {
+      modeKjToKcal = !modeKjToKcal;
+      updateLabels(); clearResult();
+      inputField.value = ''; inputField.focus();
+      swapBtn.classList.add('spinning');
+      setTimeout(() => swapBtn.classList.remove('spinning'), 350);
+    });
+
+    convertBtn.addEventListener('click', convert);
+    inputField.addEventListener('keydown', e => { if (e.key === 'Enter') convert(); });
+    inputField.addEventListener('input', () => {
+      result.textContent = '—';
+      result.classList.add('empty');
+      factorLabel.textContent = '';
+    });
+
+    // iOS install hint (show once)
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.navigator.standalone;
+    const shownBefore = localStorage.getItem('install-hint');
+    if (isIOS && !isStandalone && !shownBefore) {
+      document.getElementById('install-banner').style.display = 'block';
+      document.getElementById('banner-close').addEventListener('click', () => {
+        document.getElementById('install-banner').style.display = 'none';
+        localStorage.setItem('install-hint', '1');
+      });
+    }
+
+    updateLabels();
+  </script>
+</body>
+</html>
