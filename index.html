@@ -11,10 +11,8 @@
   <link rel="apple-touch-icon" href="/icon.png" />
   <link rel="icon" href="/icon.png" />
   <title>Energy Converter</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
-
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --navy:   #0D1B2A;
@@ -66,7 +64,6 @@
       color: var(--grey); margin-bottom: 10px; user-select: none;
     }
     .card.active .card-label { color: var(--amber); }
-
     .card-row { display: flex; align-items: baseline; gap: 10px; }
 
     input[type="number"] {
@@ -118,18 +115,7 @@
     }
     .swap-btn.spinning svg { transform: rotate(180deg); }
 
-    .convert-btn {
-      width: 100%; max-width: 360px; margin-top: 24px;
-      padding: 18px; background: var(--amber); color: var(--navy);
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px; font-weight: 700;
-      letter-spacing: 0.08em; text-transform: uppercase;
-      border: none; border-radius: 14px; cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .convert-btn:active { background: var(--amber2); transform: scale(0.98); }
-
-    .factor { font-size: 11px; color: var(--grey); margin-top: 10px; letter-spacing: 0.03em; }
+    .factor { font-size: 11px; color: var(--grey); margin-top: 10px; letter-spacing: 0.03em; min-height: 16px; }
 
     @keyframes shake {
       0%,100% { transform: translateX(0); }
@@ -140,20 +126,13 @@
     }
     .shake { animation: shake 0.35s ease; }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in { animation: fadeUp 0.2s ease forwards; }
-
     /* iOS install banner */
     #install-banner {
       display: none;
       position: fixed; bottom: 0; left: 0; right: 0;
       background: var(--card); border-top: 1px solid var(--border);
       padding: 16px 20px; text-align: center;
-      font-size: 13px; color: var(--grey);
-      z-index: 100;
+      font-size: 13px; color: var(--grey); z-index: 100;
     }
     #install-banner span { color: var(--white); }
     #install-banner button {
@@ -197,11 +176,9 @@
         <div class="result-value empty" id="result">—</div>
         <div class="unit-tag" id="outputUnit">kcal</div>
       </div>
-      <div class="factor" id="factorLabel">Enter a value above and tap Convert</div>
+      <div class="factor" id="factorLabel"></div>
     </div>
   </div>
-
-  <button class="convert-btn" id="convertBtn">Convert</button>
 
   <div id="install-banner">
     <span>Add to Home Screen</span> for the full app experience<br>
@@ -210,7 +187,6 @@
   </div>
 
   <script>
-    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
@@ -226,7 +202,6 @@
     const result      = document.getElementById('result');
     const factorLabel = document.getElementById('factorLabel');
     const swapBtn     = document.getElementById('swapBtn');
-    const convertBtn  = document.getElementById('convertBtn');
 
     function updateLabels() {
       if (modeKjToKcal) {
@@ -242,18 +217,12 @@
       }
     }
 
-    function clearResult() {
-      result.textContent = '—';
-      result.classList.add('empty');
-      factorLabel.textContent = 'Enter a value above and tap Convert';
-    }
-
     function convert() {
       const raw = parseFloat(inputField.value);
       if (isNaN(raw) || inputField.value.trim() === '') {
-        document.getElementById('inputCard').classList.add('shake');
-        setTimeout(() => document.getElementById('inputCard').classList.remove('shake'), 400);
-        clearResult();
+        result.textContent = '—';
+        result.classList.add('empty');
+        factorLabel.textContent = '';
         return;
       }
       let out, factor;
@@ -270,26 +239,22 @@
 
       result.textContent = formatted;
       result.classList.remove('empty');
-      result.classList.remove('fade-in');
-      void result.offsetWidth;
-      result.classList.add('fade-in');
       factorLabel.textContent = factor;
     }
 
+    // Live conversion as you type
+    inputField.addEventListener('input', convert);
+
     swapBtn.addEventListener('click', () => {
       modeKjToKcal = !modeKjToKcal;
-      updateLabels(); clearResult();
-      inputField.value = ''; inputField.focus();
-      swapBtn.classList.add('spinning');
-      setTimeout(() => swapBtn.classList.remove('spinning'), 350);
-    });
-
-    convertBtn.addEventListener('click', convert);
-    inputField.addEventListener('keydown', e => { if (e.key === 'Enter') convert(); });
-    inputField.addEventListener('input', () => {
+      updateLabels();
+      inputField.value = '';
       result.textContent = '—';
       result.classList.add('empty');
       factorLabel.textContent = '';
+      inputField.focus();
+      swapBtn.classList.add('spinning');
+      setTimeout(() => swapBtn.classList.remove('spinning'), 350);
     });
 
     // iOS install hint (show once)
